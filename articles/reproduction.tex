@@ -21,7 +21,6 @@ This report reproduces the current evaluation pipeline on the \textbf{publicatio
 We benchmark exactly three systems:
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Baseline}: single-call edit judge.
-    \item \textbf{Dynamic Ensemble}: escalation routing between two backends.
     \item \textbf{Agent}: multi-step edit agent.
 \end{enumerate}
 
@@ -70,14 +69,6 @@ The resulting in-repo Gold sizes are:
     \item \textbf{Concurrency}: 10 workers (kept moderate to avoid API stress).
 \end{itemize}
 
-\subsection{Dynamic Ensemble (escalation)}
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Code}: \texttt{ensembles/escalation.py}
-    \item \textbf{Definition}: route from a cheap model to a stronger model using deterministic routing, escalating only when needed.
-    \item \textbf{Backends}: \texttt{gpt-4o-mini $\to$ gpt-4.1-nano}
-    \item \textbf{Concurrency}: 10 workers for EN/DE; \textbf{3 workers} for UA (more conservative).
-\end{itemize}
-
 \subsection{Agent (edit agent)}
 \begin{itemize}[leftmargin=*]
     \item \textbf{Code}: \texttt{judges/edit/agent.py}
@@ -102,13 +93,6 @@ PYTHONPATH=$PWD python3 -m judges.edit.baseline --input data/eval/gold_de.csv --
 PYTHONPATH=$PWD python3 -m judges.edit.baseline --input data/eval/gold_ua.csv --output data/results/repro_pub_edit_baseline_gpt-4o-mini_ua/gold_ua_labeled.csv --llm_backend gpt-4o-mini --lang ua --workers 10
 \end{verbatim}
 
-\subsection{Ensemble runs (escalation)}
-\begin{verbatim}
-./shell/run_judge.sh --judge edit --method baseline --ensemble escalation --backends "gpt-4o-mini gpt-4.1-nano" --lang en --input data/eval/gold_en.csv --pref repro_pub_ens_edit --workers 10 --router deterministic
-./shell/run_judge.sh --judge edit --method baseline --ensemble escalation --backends "gpt-4o-mini gpt-4.1-nano" --lang de --input data/eval/gold_de.csv --pref repro_pub_ens_edit --workers 10 --router deterministic
-./shell/run_judge.sh --judge edit --method baseline --ensemble escalation --backends "gpt-4o-mini gpt-4.1-nano" --lang ua --input data/eval/gold_ua.csv --pref repro_pub_ens_edit --workers 3  --router deterministic
-\end{verbatim}
-
 \subsection{Agent runs}
 \begin{verbatim}
 PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_en.csv --output data/results/repro_pub_agent_v3_nograder_gpt-4.1-nano_en/gold_en_labeled.csv --llm_backend gpt-4.1-nano --lang en --workers 3 --max_retries 1 --spacy on --rulebook on
@@ -127,27 +111,25 @@ python3 -m gold_eval.run_gold data/eval/gold_ua.csv <pred.csv> --judge edit --me
 
 \textbf{Cost} is average \texttt{total\_cost\_usd} per non-error row (then scaled to \$/1K).\\
 \textbf{Accuracy} is 6-class accuracy computed by \texttt{gold\_eval} on successful rows only.
+\textbf{Binary accuracy} is computed by \texttt{gold\_eval} for the TP/FP decision (collapsed from the 6-class labels).
 
 \begin{table}[h]
 \centering
-\begin{tabular}{@{}llrrrr@{}}
+\begin{tabular}{@{}llrrrrr@{}}
 \toprule
-\textbf{Lang} & \textbf{Method} & \textbf{Accuracy} & \textbf{Success} & \textbf{Errors} & \textbf{\$/1K} \\
+\textbf{Lang} & \textbf{Method} & \textbf{Acc (6cls)} & \textbf{Acc (bin)} & \textbf{Success} & \textbf{Errors} & \textbf{\$/1K} \\
 \midrule
-EN & Baseline (4o-mini, post-pass) & 0.583 & 211/220 & 9 & 0.277 \\
-EN & Ensemble (4o-mini$\to$4.1-nano) & 0.490 & 204/220 & 16 & 0.379 \\
-EN & Agent (4.1-nano, v3 no-grader) & 0.432 & 220/220 & 0 & 0.366 \\
+EN & Baseline (4o-mini, post-pass) & 0.583 & 0.686 & 211/220 & 9 & 0.277 \\
+EN & Agent v2 (gated+verify, 4o-mini) & 0.559 & 0.636 & 220/220 & 0 & 0.126 \\
 \midrule
-DE & Baseline (4o-mini, post-pass) & 0.655 & 238/240 & 2 & 0.279 \\
-DE & Ensemble (4o-mini$\to$4.1-nano) & 0.558 & 226/240 & 14 & 0.387 \\
-DE & Agent (4.1-nano, v3 no-grader) & 0.583 & 240/240 & 0 & 0.371 \\
+DE & Baseline (4o-mini, post-pass) & 0.655 & 0.700 & 238/240 & 2 & 0.279 \\
+DE & Agent v2 (gated+verify, 4o-mini) & 0.679 & 0.746 & 240/240 & 0 & 0.131 \\
 \midrule
-UA & Baseline (4o-mini, post-pass) & 0.681 & 251/252 & 1 & 0.267 \\
-UA & Ensemble (4o-mini$\to$4.1-nano) & 0.592 & 250/252 & 2 & 0.405 \\
-UA & Agent (4.1-nano, v3 no-grader) & 0.599 & 252/252 & 0 & 0.363 \\
+UA & Baseline (4o-mini, post-pass) & 0.681 & 0.726 & 251/252 & 1 & 0.267 \\
+UA & Agent v2 (gated+verify, 4o-mini) & 0.659 & 0.679 & 252/252 & 0 & 0.141 \\
 \bottomrule
 \end{tabular}
-\caption{Gold EN/DE/UA reproduction results.}
+\caption{Gold EN/DE/UA reproduction results (ensemble removed; binary accuracy included).}
 \end{table}
 
 \section{Notes / Known issues}
