@@ -17,6 +17,26 @@ import pandas as pd
 from collections import Counter
 from typing import Dict, List, Any, Optional
 
+
+def _norm_label(x: Any) -> str:
+    """Normalize labels to stable, sortable strings.
+
+    Some judges may emit None (e.g., parse failures). Keep reporting robust by
+    mapping None/NaN/empty to a consistent 'Error' bucket.
+    """
+    try:
+        if x is None:
+            return "Error"
+        # pandas NaN support
+        if isinstance(x, float) and pd.isna(x):
+            return "Error"
+        s = str(x).strip()
+        if not s or s.lower() in {"nan", "none"}:
+            return "Error"
+        return s
+    except Exception:
+        return "Error"
+
 def analyze_distribution(results: List[Dict[str, Any]], 
                         pred_col: str = 'pred_specialized', 
                         gold_col: str = 'gold_specialized') -> Dict[str, Any]:
@@ -41,8 +61,8 @@ def analyze_distribution(results: List[Dict[str, Any]],
         }
     
     # Extract predictions and gold labels
-    predictions = [r.get(pred_col, 'Unknown') for r in results]
-    gold_labels = [r.get(gold_col, 'Unknown') for r in results]
+    predictions = [_norm_label(r.get(pred_col, 'Unknown')) for r in results]
+    gold_labels = [_norm_label(r.get(gold_col, 'Unknown')) for r in results]
     
     # Count distributions
     pred_counts = Counter(predictions)

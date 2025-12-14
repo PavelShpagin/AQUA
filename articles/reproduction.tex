@@ -81,7 +81,7 @@ The resulting in-repo Gold sizes are:
 \subsection{Agent (edit agent)}
 \begin{itemize}[leftmargin=*]
     \item \textbf{Code}: \texttt{judges/edit/agent.py}
-    \item \textbf{Definition}: multi-step edit agent with spaCy cues and a final consolidation pass (grader backend disabled in these runs).
+    \item \textbf{Definition}: multi-step edit agent with \textbf{text tools} (spaCy cues) and a \textbf{rulebook tool} (offline, per-language local rulebook RAG). A grader pass exists but is disabled for these publication runs.
     \item \textbf{Backend}: \texttt{gpt-4.1-nano}
     \item \textbf{Concurrency}: 3 workers (conservative).
 \end{itemize}
@@ -111,9 +111,9 @@ PYTHONPATH=$PWD python3 -m judges.edit.baseline --input data/eval/gold_ua.csv --
 
 \subsection{Agent runs}
 \begin{verbatim}
-PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_en.csv --output data/results/repro_pub_agent_gpt-4.1-nano_en/gold_en_labeled.csv --llm_backend gpt-4.1-nano --lang en --workers 3
-PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_de.csv --output data/results/repro_pub_agent_gpt-4.1-nano_de/gold_de_labeled.csv --llm_backend gpt-4.1-nano --lang de --workers 3
-PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_ua.csv --output data/results/repro_pub_agent_gpt-4.1-nano_ua/gold_ua_labeled.csv --llm_backend gpt-4.1-nano --lang ua --workers 3
+PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_en.csv --output data/results/repro_pub_agent_v3_nograder_gpt-4.1-nano_en/gold_en_labeled.csv --llm_backend gpt-4.1-nano --lang en --workers 3 --max_retries 1 --spacy on --rulebook on
+PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_de.csv --output data/results/repro_pub_agent_v3_nograder_gpt-4.1-nano_de/gold_de_labeled.csv --llm_backend gpt-4.1-nano --lang de --workers 3 --max_retries 1 --spacy on --rulebook on
+PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_ua.csv --output data/results/repro_pub_agent_v3_nograder_gpt-4.1-nano_ua/gold_ua_labeled.csv --llm_backend gpt-4.1-nano --lang ua --workers 3 --max_retries 1 --spacy on --rulebook on
 \end{verbatim}
 
 \subsection{Scoring}
@@ -136,15 +136,15 @@ python3 -m gold_eval.run_gold data/eval/gold_ua.csv <pred.csv> --judge edit --me
 \midrule
 EN & Baseline (4o-mini, post-pass) & 0.583 & 211/220 & 9 & 0.277 \\
 EN & Ensemble (4o-mini$\to$4.1-nano) & 0.490 & 204/220 & 16 & 0.379 \\
-EN & Agent (4.1-nano) & 0.532 & 218/220 & 2 & 0.355 \\
+EN & Agent (4.1-nano, v3 no-grader) & 0.432 & 220/220 & 0 & 0.366 \\
 \midrule
 DE & Baseline (4o-mini, post-pass) & 0.655 & 238/240 & 2 & 0.279 \\
 DE & Ensemble (4o-mini$\to$4.1-nano) & 0.558 & 226/240 & 14 & 0.387 \\
-DE & Agent (4.1-nano) & 0.618 & 228/240 & 12 & 0.355 \\
+DE & Agent (4.1-nano, v3 no-grader) & 0.583 & 240/240 & 0 & 0.371 \\
 \midrule
 UA & Baseline (4o-mini, post-pass) & 0.681 & 251/252 & 1 & 0.267 \\
 UA & Ensemble (4o-mini$\to$4.1-nano) & 0.592 & 250/252 & 2 & 0.405 \\
-UA & Agent (4.1-nano) & 0.660 & 247/252 & 5 & 0.350 \\
+UA & Agent (4.1-nano, v3 no-grader) & 0.599 & 252/252 & 0 & 0.363 \\
 \bottomrule
 \end{tabular}
 \caption{Gold EN/DE/UA reproduction results.}
@@ -153,8 +153,10 @@ UA & Agent (4.1-nano) & 0.660 & 247/252 & 5 & 0.350 \\
 \section{Notes / Known issues}
 \begin{itemize}[leftmargin=*]
     \item \textbf{API conservatism}: all new runs used low worker counts (3--10) to avoid stressing the API key.
+    \item \textbf{Why prior agent success was $<100\%$}: we traced this to \textbf{parsing/escaping edge cases} (quotes/backslashes inside alignment spans causing invalid JSON escapes). The agent was updated to be robust (escape repair, span extraction for insert/delete, strict JSON retry, and a last-resort single-label fallback), yielding \textbf{100\% success} on Gold EN/DE/UA.
     \item \textbf{Error rows}: baseline/ensemble still produce a small number of \texttt{Error} rows (timeouts / parse failures). We report success rate and compute accuracy on successful rows only.
     \item \textbf{Judge type alignment}: we report only \texttt{edit}-judge metrics (TP/FP1/FP2/FP3/TN/FN), matching the Gold label set.
+    \item \textbf{Bottleneck for accuracy (not success)}: FP2 is rare and subtle; the dominant remaining errors are FP2 vs (TP/FP3) and ``style vs error'' boundaries. Simplified accuracy is consistently higher than strict 6-class accuracy.
 \end{itemize}
 
 \end{document}
