@@ -1,0 +1,33 @@
+### Python / OS
+__pycache__/
+*.py[cod]
+*.so
+.DS_Store
+
+### Environments / secrets
+.venv/
+venv/
+.env
+
+### Large / non-public / generated
+paper/
+third-party/
+_experiments/
+_other/
+_legacy/
+**/legacy/
+data/results/
+data/cache/
+data/rag_index/
+
+### Keep only the publication-relevant evaluation/annotation data
+data/*
+!data/eval/
+!data/eval/gold_*.csv
+!data/annotations/
+!data/annotations/*.csv
+!data/annotations/annotators/
+!data/annotations/annotators/*.csv
+
+### Local helper scripts
+push.sh

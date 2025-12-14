@@ -1,0 +1,24 @@
+judge: edit
+method: agent
+backends:
+  - gpt-4.1-nano
+lang: es
+ensemble: weighted
+n_judges: 1
+moderation: off
+optimization: on
+batch: off  
+workers: 200
+grader_backend: gpt-4.1
+rulebook: on
+spacy: on
+# filter: tgt
+# gold: data/eval/SpanishFPs.csv
+# input: data/eval/es_eval.csv
+gold: data/eval/SpanishFPs.csv
+# filter:
+#  - gen_rewrite_1_gpt5_gec_conservative
+#  - rerank_selected_1
+# filter_aligned:
+#   - gen_annotated_1_gpt5_gec_conservative
+#   - rerank_annotated_1

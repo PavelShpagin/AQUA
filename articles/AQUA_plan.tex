@@ -1,0 +1,520 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{natbib}
+
+\title{\textbf{AQUA Paper Publication Plan} \\
+\large Strategic Roadmap for ACL 2025 and Top NLP Venues}
+\author{Paper Planning Document}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Target Venues and Timeline}
+
+\subsection{Primary Target: ACL 2025 Main Conference}
+
+\begin{itemize}
+    \item \textbf{Venue}: ACL 2025 (Annual Meeting of the Association for Computational Linguistics)
+    \item \textbf{Expected Deadline}: February 2025 (ARR submission) or direct submission
+    \item \textbf{Notification}: April-May 2025
+    \item \textbf{Conference}: July 2025 (Vienna, Austria)
+    \item \textbf{Track}: Main Conference (Long Paper, 8 pages + references)
+\end{itemize}
+
+\subsection{Alternative Venues (in order of preference)}
+
+\begin{enumerate}
+    \item \textbf{EMNLP 2025}: Empirical Methods in NLP (Deadline: May 2025)
+    \item \textbf{NAACL 2025}: North American Chapter of ACL (Deadline: October 2024 for NAACL 2025)
+    \item \textbf{COLING 2025}: International Conference on Computational Linguistics
+    \item \textbf{EACL 2025}: European Chapter of ACL
+    \item \textbf{*SEM 2025}: Joint Conference on Lexical and Computational Semantics
+\end{enumerate}
+
+\subsection{Workshop Fallback Options}
+
+\begin{itemize}
+    \item \textbf{BEA Workshop}: Building Educational Applications (co-located with ACL/EMNLP)
+    \item \textbf{INLG}: International Natural Language Generation Conference
+    \item \textbf{MultiLing Workshop}: Multilingual Text Processing
+\end{itemize}
+
+\section{Proposed Paper Titles}
+
+\subsection{Primary Title Options}
+
+\begin{enumerate}
+    \item \textbf{AQUA: Autonomous Quality Assurance for Multilingual Grammatical Error Correction}
+    
+    \item \textbf{Dynamic Ensemble Methods for LLM-as-a-Judge in Grammatical Error Correction}
+    
+    \item \textbf{Beyond Binary: Fine-Grained GEC Evaluation with Agentic LLM Judges}
+    
+    \item \textbf{Agent-as-a-Judge: Tool-Augmented Reasoning for GEC Quality Assessment}
+\end{enumerate}
+
+\subsection{Recommended Title}
+
+\begin{center}
+\fbox{\parbox{0.9\textwidth}{
+\centering
+\textbf{AQUA: Autonomous Quality Assurance for Multilingual GEC via Agentic Ensemble Judging}
+}}
+\end{center}
+
+\section{Paper Structure and Outline}
+
+\subsection{Abstract (250 words)}
+
+\begin{quote}
+\textit{Outline}: Introduce the GEC evaluation challenge $\rightarrow$ Present AQUA framework $\rightarrow$ Highlight key innovations (6-class taxonomy, dynamic escalation, inner debate, agent-as-judge) $\rightarrow$ Report main results (93\% 4-class accuracy, +3\% from agentic methods) $\rightarrow$ Emphasize multilingual and production-ready aspects.
+\end{quote}
+
+\subsection{Section 1: Introduction (1 page)}
+
+\begin{enumerate}
+    \item \textbf{Problem Motivation}
+    \begin{itemize}
+        \item GEC systems produce suggestions ranging from beneficial to harmful
+        \item Manual evaluation is expensive and doesn't scale
+        \item Existing automated metrics (ERRANT, GLEU) don't capture severity
+        \item Need for fine-grained, explainable quality assessment
+    \end{itemize}
+    
+    \item \textbf{Contributions Preview}
+    \begin{itemize}
+        \item Novel 6-class taxonomy (TP, FP1, FP2, FP3, TN, FN)
+        \item Dynamic escalation ensemble for cost-efficient routing
+        \item Inner Debate ensemble for structured disagreement resolution
+        \item Agent-as-a-Judge with tool-augmented reasoning
+        \item Multilingual support and production-ready implementation
+    \end{itemize}
+    
+    \item \textbf{Paper Organization}
+\end{enumerate}
+
+\subsection{Section 2: Related Work (1 page)}
+
+\begin{enumerate}
+    \item \textbf{GEC Evaluation Methods}
+    \begin{itemize}
+        \item Reference-based: M$^2$, ERRANT, GLEU
+        \item Reference-free: Grammaticality models, LLM-based scoring
+        \item Human evaluation protocols
+    \end{itemize}
+    
+    \item \textbf{LLM-as-a-Judge}
+    \begin{itemize}
+        \item G-Eval, GPTScore for NLG evaluation
+        \item MT-Bench, Arena for instruction following
+        \item Self-consistency and calibration methods
+    \end{itemize}
+    
+    \item \textbf{Ensemble Methods for NLP}
+    \begin{itemize}
+        \item Voting and weighted aggregation
+        \item Mixture of Experts (MoE)
+        \item Debate and argumentation approaches
+    \end{itemize}
+    
+    \item \textbf{Agentic NLP Systems}
+    \begin{itemize}
+        \item ReAct, Tool-augmented LLMs
+        \item RAG for knowledge grounding
+        \item Multi-agent systems
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Section 3: Task Definition and Taxonomy (0.75 pages)}
+
+\begin{enumerate}
+    \item \textbf{Problem Formulation}
+    \begin{itemize}
+        \item Input: (source sentence, GEC suggestion)
+        \item Output: Quality label with confidence and reasoning
+        \item Objective: Maximize accuracy while minimizing cost
+    \end{itemize}
+    
+    \item \textbf{Label Taxonomy}
+    \begin{itemize}
+        \item TP: True Positive (beneficial correction)
+        \item FP1: Critical False Positive (meaning change, sensitivity)
+        \item FP2: Medium False Positive (introduces error)
+        \item FP3: Minor False Positive (stylistic, optional)
+        \item TN: True Negative (correctly unchanged)
+        \item FN: False Negative (missed correction)
+    \end{itemize}
+    
+    \item \textbf{Evaluation Protocols}
+    \begin{itemize}
+        \item 6-class multiclass evaluation
+        \item 4-class (TP/FP1/FP2/FP3) for edit-level
+        \item Binary TP/FP aggregation
+        \item Simplified TP/FP (FP3$\rightarrow$TP)
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Section 4: AQUA Framework (2.5 pages)}
+
+\begin{enumerate}
+    \item \textbf{4.1 System Overview}
+    \begin{itemize}
+        \item Architecture diagram
+        \item Modular judge types (Feedback, Sentence, Edit, TN/FN)
+        \item ERRANT alignment integration
+    \end{itemize}
+    
+    \item \textbf{4.2 Baseline Judge}
+    \begin{itemize}
+        \item Prompt design with explicit decision order
+        \item Trigger tests for each category
+        \item JSON output parsing
+    \end{itemize}
+    
+    \item \textbf{4.3 Dynamic Escalation Ensemble}
+    \begin{itemize}
+        \item Risk flag computation (language-agnostic heuristics)
+        \item Routing logic: small $\rightarrow$ mid $\rightarrow$ top
+        \item Finalizer arbitration for conflicts
+        \item Cost-efficiency analysis
+    \end{itemize}
+    
+    \item \textbf{4.4 Iterative Critic Ensemble}
+    \begin{itemize}
+        \item Dual buffer mechanism (TP/FP vs TN/FN)
+        \item Consensus checking algorithm
+        \item Opinion formatting and context passing
+        \item Top-2 class selection for final judgment
+    \end{itemize}
+    
+    \item \textbf{4.5 Inner Debate Ensemble}
+    \begin{itemize}
+        \item Dominance priority hierarchy
+        \item Debater selection (balanced min(m,k))
+        \item Alternating argument structure
+        \item Debate-aware final judgment prompts
+    \end{itemize}
+    
+    \item \textbf{4.6 Agent-as-a-Judge}
+    \begin{itemize}
+        \item Tool inventory (Grammar RAG, Meaning Change, Nonsense, Quality)
+        \item ReAct reasoning framework
+        \item Language-specific grammar databases
+        \item Tool invocation and result synthesis
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Section 5: Experimental Setup (0.75 pages)}
+
+\begin{enumerate}
+    \item \textbf{Datasets}
+    \begin{itemize}
+        \item Gold datasets: English, German, Ukrainian, Spanish
+        \item Data collection and annotation protocol
+        \item Inter-annotator agreement
+        \item Train/dev/test splits
+    \end{itemize}
+    
+    \item \textbf{Baselines}
+    \begin{itemize}
+        \item Single-model baselines (GPT-4, GPT-4o-mini, etc.)
+        \item Simple ensemble (majority voting)
+        \item Prior LLM-as-Judge methods (G-Eval adaptation)
+    \end{itemize}
+    
+    \item \textbf{Models and Backends}
+    \begin{itemize}
+        \item Small: gpt-4.1-nano, gemini-2.0-flash-lite
+        \item Medium: gpt-4o-mini, claude-3-haiku
+        \item Large: gpt-4o, o3, claude-3-opus
+    \end{itemize}
+    
+    \item \textbf{Evaluation Metrics}
+    \begin{itemize}
+        \item Accuracy, Precision, Recall, F1 (macro and weighted)
+        \item Per-class metrics
+        \item Cost per 1000 evaluations
+        \item Latency analysis
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Section 6: Results (1.5 pages)}
+
+\begin{enumerate}
+    \item \textbf{6.1 Main Results}
+    \begin{itemize}
+        \item Table: 6-class accuracy across methods and languages
+        \item Table: Binary TP/FP results
+        \item Analysis: Which methods excel on which classes
+    \end{itemize}
+    
+    \item \textbf{6.2 Escalation Efficiency}
+    \begin{itemize}
+        \item Escalation rate analysis
+        \item Cost vs. accuracy tradeoff curves
+        \item Per-category escalation patterns
+    \end{itemize}
+    
+    \item \textbf{6.3 Agent Performance}
+    \begin{itemize}
+        \item Tool usage statistics
+        \item RAG query effectiveness
+        \item Comparison with non-agentic approaches
+    \end{itemize}
+    
+    \item \textbf{6.4 Ablation Studies}
+    \begin{itemize}
+        \item Effect of number of judges
+        \item Impact of different backends
+        \item Contribution of each ensemble component
+    \end{itemize}
+    
+    \item \textbf{6.5 Cross-lingual Analysis}
+    \begin{itemize}
+        \item Performance variation across languages
+        \item Language-specific error patterns
+        \item Transfer learning potential
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Section 7: Analysis and Discussion (0.75 pages)}
+
+\begin{enumerate}
+    \item \textbf{Error Analysis}
+    \begin{itemize}
+        \item Common failure modes
+        \item FP1 vs FP3 confusion cases
+        \item Edge cases and ambiguities
+    \end{itemize}
+    
+    \item \textbf{Qualitative Examples}
+    \begin{itemize}
+        \item Success cases: Inner Debate resolving disagreement
+        \item Failure cases: Agent tool misuse
+        \item Escalation trigger effectiveness
+    \end{itemize}
+    
+    \item \textbf{Limitations}
+    \begin{itemize}
+        \item Dependence on LLM capabilities
+        \item Cost constraints for high-volume deployment
+        \item Language coverage gaps
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Section 8: Conclusion (0.25 pages)}
+
+\begin{enumerate}
+    \item Summary of contributions
+    \item Key takeaways for practitioners
+    \item Future work directions
+\end{enumerate}
+
+\section{Key Figures and Tables}
+
+\subsection{Required Figures}
+
+\begin{enumerate}
+    \item \textbf{Figure 1}: AQUA System Architecture (full-page diagram)
+    \item \textbf{Figure 2}: Dynamic Escalation Flow
+    \item \textbf{Figure 3}: Inner Debate Example
+    \item \textbf{Figure 4}: Agent ReAct Reasoning Trace
+    \item \textbf{Figure 5}: Cost vs. Accuracy Tradeoff Curves
+\end{enumerate}
+
+\subsection{Required Tables}
+
+\begin{enumerate}
+    \item \textbf{Table 1}: Dataset Statistics
+    \item \textbf{Table 2}: Main Results (6-class accuracy)
+    \item \textbf{Table 3}: Binary TP/FP Results
+    \item \textbf{Table 4}: Per-class Precision/Recall/F1
+    \item \textbf{Table 5}: Escalation Rate and Cost Analysis
+    \item \textbf{Table 6}: Ablation Study Results
+    \item \textbf{Table 7}: Cross-lingual Performance
+\end{enumerate}
+
+\section{Novelty Claims}
+
+\subsection{Primary Novelty}
+
+\begin{enumerate}
+    \item \textbf{First agentic LLM-as-Judge for GEC}: No prior work combines tool-augmented reasoning with ensemble methods for GEC evaluation.
+    
+    \item \textbf{Inner Debate Ensemble}: Novel debate-style resolution mechanism that structures disagreements into formal arguments before adjudication.
+    
+    \item \textbf{Dynamic Escalation with Deterministic Routing}: Unique combination of heuristic risk flags with LLM-based classification for cost-efficient routing.
+    
+    \item \textbf{Fine-grained 6-class Taxonomy}: Extension beyond binary TP/FP to capture severity gradations critical for production deployment.
+\end{enumerate}
+
+\subsection{Supporting Claims}
+
+\begin{enumerate}
+    \item Dual-buffer consensus mechanism in Iterative Critic
+    \item Language-agnostic risk flag computation
+    \item Multilingual grammar RAG databases
+    \item Production-ready implementation with cost tracking
+\end{enumerate}
+
+\section{Comparison to Related Work}
+
+\subsection{vs. LLM-as-a-Judge Methods}
+
+\begin{itemize}
+    \item \textbf{G-Eval} (Liu et al., 2023): Single-model, no ensemble, no tool use
+    \item \textbf{GPTScore} (Fu et al., 2023): Probability-based, no fine-grained taxonomy
+    \item \textbf{AQUA}: Ensemble + agentic + 6-class + multilingual
+\end{itemize}
+
+\subsection{vs. GEC Evaluation Methods}
+
+\begin{itemize}
+    \item \textbf{ERRANT} (Bryant et al., 2017): Rule-based, no severity assessment
+    \item \textbf{GLEU} (Napoles et al., 2015): Reference-based, binary correct/incorrect
+    \item \textbf{AQUA}: Reference-free, severity-aware, explainable
+\end{itemize}
+
+\subsection{vs. Multi-Agent Systems}
+
+\begin{itemize}
+    \item \textbf{AutoGen} (Wu et al., 2023): General conversation, not GEC-specific
+    \item \textbf{Debate} (Irving et al., 2018): Theoretical framework, not implemented for NLP tasks
+    \item \textbf{AQUA}: GEC-specialized with grammar tools and debate-style resolution
+\end{itemize}
+
+\section{Experimental Gaps to Fill}
+
+\subsection{Critical Experiments Needed}
+
+\begin{enumerate}
+    \item \textbf{Inter-annotator Agreement Study}
+    \begin{itemize}
+        \item Compute Cohen's Kappa or Krippendorff's Alpha
+        \item Per-class agreement analysis
+        \item Annotator calibration protocol
+    \end{itemize}
+    
+    \item \textbf{Statistical Significance Testing}
+    \begin{itemize}
+        \item Bootstrap confidence intervals
+        \item Paired t-tests for method comparisons
+        \item Multiple comparison correction
+    \end{itemize}
+    
+    \item \textbf{Human Evaluation}
+    \begin{itemize}
+        \item Sample of AQUA predictions rated by humans
+        \item Correlation with human judgments
+        \item Reasoning quality assessment
+    \end{itemize}
+    
+    \item \textbf{Additional Languages}
+    \begin{itemize}
+        \item French, Italian (Romance languages)
+        \item Chinese, Japanese (non-Indo-European)
+        \item Low-resource language testing
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Ablation Experiments}
+
+\begin{enumerate}
+    \item Number of judges: 1, 2, 3, 5, 7
+    \item Escalation thresholds: vary risk flag sensitivity
+    \item Debate rounds: 1 vs. 2 debate cycles
+    \item Agent tools: individual tool contribution
+\end{enumerate}
+
+\section{Writing Timeline}
+
+\subsection{For ACL 2025 February Deadline}
+
+\begin{center}
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Date} & \textbf{Milestone} \\
+\midrule
+Week 1-2 (Dec) & Complete missing experiments, finalize results \\
+Week 3-4 (Dec) & Write Methods section (Sections 3-4) \\
+Week 1 (Jan) & Write Experiments and Results (Sections 5-6) \\
+Week 2 (Jan) & Write Introduction and Related Work (Sections 1-2) \\
+Week 3 (Jan) & Write Analysis, Discussion, Conclusion (Sections 7-8) \\
+Week 4 (Jan) & Create all figures and tables \\
+Week 1 (Feb) & Internal review and revision \\
+Week 2 (Feb) & External review, final polishing, submission \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Supplementary Materials}
+
+\subsection{Appendix Contents}
+
+\begin{enumerate}
+    \item Full prompt templates for all judge types
+    \item Detailed hyperparameter settings
+    \item Complete results tables with confidence intervals
+    \item Additional qualitative examples
+    \item Dataset annotation guidelines
+    \item Grammar RAG database samples
+\end{enumerate}
+
+\subsection{Code and Data Release}
+
+\begin{enumerate}
+    \item GitHub repository with full implementation
+    \item Gold evaluation datasets (anonymized if needed)
+    \item Pre-trained RAG databases
+    \item Reproduction scripts
+    \item Demo notebook
+\end{enumerate}
+
+\section{Risk Assessment}
+
+\subsection{Potential Reviewer Concerns}
+
+\begin{enumerate}
+    \item \textbf{``Just prompt engineering''}: Counter with novel ensemble algorithms and agentic framework
+    \item \textbf{``Limited languages''}: Emphasize language-agnostic design, show transfer
+    \item \textbf{``High cost''}: Highlight escalation efficiency, cost reduction
+    \item \textbf{``No theoretical contribution''}: Focus on empirical novelty, practical impact
+\end{enumerate}
+
+\subsection{Mitigation Strategies}
+
+\begin{enumerate}
+    \item Strong ablation studies showing each component's contribution
+    \item Comparison with diverse baselines
+    \item Human evaluation correlation
+    \item Production deployment case study (if available)
+\end{enumerate}
+
+\section{Conclusion}
+
+This paper plan outlines a comprehensive strategy for publishing AQUA at ACL 2025 or equivalent top-tier venues. The key strengths are:
+
+\begin{enumerate}
+    \item \textbf{Strong novelty}: First agentic ensemble approach for GEC evaluation
+    \item \textbf{Solid empirical results}: 93\% 4-class accuracy, significant improvements
+    \item \textbf{Practical impact}: Production-ready, cost-efficient, multilingual
+    \item \textbf{Comprehensive evaluation}: Multiple languages, ablations, analysis
+\end{enumerate}
+
+With execution of the experimental plan and adherence to the writing timeline, this work is well-positioned for acceptance at a top NLP venue.
+
+\end{document}
+

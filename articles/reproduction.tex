@@ -1,0 +1,160 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\title{\textbf{AQUA: Reproduction Report (Gold EN/DE/UA Only)}}
+\author{Internal reproducibility note (publication-facing)}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Scope}
+
+This report reproduces the current evaluation pipeline on the \textbf{publication datasets only}:
+\texttt{data/eval/gold\_en.csv}, \texttt{data/eval/gold\_de.csv}, \texttt{data/eval/gold\_ua.csv}.
+
+We benchmark exactly three systems:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Baseline}: single-call edit judge.
+    \item \textbf{Dynamic Ensemble}: escalation routing between two backends.
+    \item \textbf{Agent}: multi-step edit agent.
+\end{enumerate}
+
+All metrics below are computed with \texttt{python -m gold\_eval.run\_gold} and are reported \textbf{on successful predictions only}; we also report success rate explicitly.
+
+\section{Data provenance and filtering}
+
+\subsection{Raw annotation sources (original 300 per language)}
+
+The original annotation exports are:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{EN}: \texttt{data/annotations/f3120198.csv} (\textbf{300} unique (src,tgt) pairs)
+    \item \textbf{DE}: \texttt{data/annotations/f3120001.csv} (\textbf{300} unique (src,tgt) pairs)
+    \item \textbf{UA}: \texttt{data/annotations/f3119729.csv} (\textbf{300} unique (src,tgt) pairs)
+\end{itemize}
+
+Each file contains multiple annotator rows per sentence pair.
+
+\subsection{Gold construction (current filtered files)}
+
+Gold construction is implemented in \texttt{processing/gold\_annotations.py}. The core steps are:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Label mapping}: map raw UI labels into \{TP, FP3, FP2, FP1\}.
+    \item \textbf{Sentence label}: compute sentence-level label via majority vote (ties broken by severity FP1$>$FP2$>$FP3$>$TP) and apply TN/FN logic when src==tgt.
+    \item \textbf{Edit-level aggregation}: aggregate edit labels across all rows sharing the same src (group-aware voting).
+    \item \textbf{De-duplication}: enforce unique (src,tgt) rows.
+\end{itemize}
+
+The resulting in-repo Gold sizes are:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{gold\_en}: 220 examples
+    \item \textbf{gold\_de}: 240 examples
+    \item \textbf{gold\_ua}: 252 examples
+\end{itemize}
+
+\textbf{Optional stricter filters} supported by \texttt{processing/gold\_annotations.py} (not applied to the current committed Gold files) include:
+\texttt{--drop\_cant}, \texttt{--drop\_ties}, \texttt{--consistency}.
+
+\section{Systems benchmarked}
+
+\subsection{Baseline (edit baseline)}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Code}: \texttt{judges/edit/baseline.py}
+    \item \textbf{Definition}: one LLM call using \texttt{EDIT\_LEVEL\_JUDGE\_PROMPT}, parse per-edit labels, then aggregate into sentence label (TP/FP1/FP2/FP3/TN/FN).
+    \item \textbf{Backend}: \texttt{gpt-4o-mini}
+    \item \textbf{Concurrency}: 10 workers (kept moderate to avoid API stress).
+\end{itemize}
+
+\subsection{Dynamic Ensemble (escalation)}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Code}: \texttt{ensembles/escalation.py}
+    \item \textbf{Definition}: route from a cheap model to a stronger model using deterministic routing, escalating only when needed.
+    \item \textbf{Backends}: \texttt{gpt-4o-mini $\to$ gpt-4.1-nano}
+    \item \textbf{Concurrency}: 10 workers for EN/DE; \textbf{3 workers} for UA (more conservative).
+\end{itemize}
+
+\subsection{Agent (edit agent)}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Code}: \texttt{judges/edit/agent.py}
+    \item \textbf{Definition}: multi-step edit agent with spaCy cues and a final consolidation pass (grader backend disabled in these runs).
+    \item \textbf{Backend}: \texttt{gpt-4.1-nano}
+    \item \textbf{Concurrency}: 3 workers (conservative).
+\end{itemize}
+
+\section{Reproduction commands}
+
+\subsection{Gold generation (from raw annotations)}
+\begin{verbatim}
+python3 processing/gold_annotations.py --output-dir data/eval
+# optional stricter filtering:
+# python3 processing/gold_annotations.py --output-dir data/eval --drop_cant 1 --drop_ties --consistency 2
+\end{verbatim}
+
+\subsection{Baseline runs (edit baseline)}
+\begin{verbatim}
+PYTHONPATH=$PWD python3 -m judges.edit.baseline --input data/eval/gold_en.csv --output data/results/repro_pub_edit_baseline_gpt-4o-mini_en/gold_en_labeled.csv --llm_backend gpt-4o-mini --lang en --workers 10
+PYTHONPATH=$PWD python3 -m judges.edit.baseline --input data/eval/gold_de.csv --output data/results/repro_pub_edit_baseline_gpt-4o-mini_de/gold_de_labeled.csv --llm_backend gpt-4o-mini --lang de --workers 10
+PYTHONPATH=$PWD python3 -m judges.edit.baseline --input data/eval/gold_ua.csv --output data/results/repro_pub_edit_baseline_gpt-4o-mini_ua/gold_ua_labeled.csv --llm_backend gpt-4o-mini --lang ua --workers 10
+\end{verbatim}
+
+\subsection{Ensemble runs (escalation)}
+\begin{verbatim}
+./shell/run_judge.sh --judge edit --method baseline --ensemble escalation --backends "gpt-4o-mini gpt-4.1-nano" --lang en --input data/eval/gold_en.csv --pref repro_pub_ens_edit --workers 10 --router deterministic
+./shell/run_judge.sh --judge edit --method baseline --ensemble escalation --backends "gpt-4o-mini gpt-4.1-nano" --lang de --input data/eval/gold_de.csv --pref repro_pub_ens_edit --workers 10 --router deterministic
+./shell/run_judge.sh --judge edit --method baseline --ensemble escalation --backends "gpt-4o-mini gpt-4.1-nano" --lang ua --input data/eval/gold_ua.csv --pref repro_pub_ens_edit --workers 3  --router deterministic
+\end{verbatim}
+
+\subsection{Agent runs}
+\begin{verbatim}
+PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_en.csv --output data/results/repro_pub_agent_gpt-4.1-nano_en/gold_en_labeled.csv --llm_backend gpt-4.1-nano --lang en --workers 3
+PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_de.csv --output data/results/repro_pub_agent_gpt-4.1-nano_de/gold_de_labeled.csv --llm_backend gpt-4.1-nano --lang de --workers 3
+PYTHONPATH=$PWD python3 judges/edit/agent.py --input data/eval/gold_ua.csv --output data/results/repro_pub_agent_gpt-4.1-nano_ua/gold_ua_labeled.csv --llm_backend gpt-4.1-nano --lang ua --workers 3
+\end{verbatim}
+
+\subsection{Scoring}
+\begin{verbatim}
+python3 -m gold_eval.run_gold data/eval/gold_en.csv <pred.csv> --judge edit --method <baseline|agent> --lang en --llm_backend <backend>
+python3 -m gold_eval.run_gold data/eval/gold_de.csv <pred.csv> --judge edit --method <baseline|agent> --lang de --llm_backend <backend>
+python3 -m gold_eval.run_gold data/eval/gold_ua.csv <pred.csv> --judge edit --method <baseline|agent> --lang ua --llm_backend <backend>
+\end{verbatim}
+
+\section{Results (accuracy, success rate, cost)}
+
+\textbf{Cost} is average \texttt{total\_cost\_usd} per non-error row (then scaled to \$/1K).\\
+\textbf{Accuracy} is 6-class accuracy computed by \texttt{gold\_eval} on successful rows only.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+\textbf{Lang} & \textbf{Method} & \textbf{Accuracy} & \textbf{Success} & \textbf{Errors} & \textbf{\$/1K} \\
+\midrule
+EN & Baseline (4o-mini, post-pass) & 0.583 & 211/220 & 9 & 0.277 \\
+EN & Ensemble (4o-mini$\to$4.1-nano) & 0.490 & 204/220 & 16 & 0.379 \\
+EN & Agent (4.1-nano) & 0.532 & 218/220 & 2 & 0.355 \\
+\midrule
+DE & Baseline (4o-mini, post-pass) & 0.655 & 238/240 & 2 & 0.279 \\
+DE & Ensemble (4o-mini$\to$4.1-nano) & 0.558 & 226/240 & 14 & 0.387 \\
+DE & Agent (4.1-nano) & 0.618 & 228/240 & 12 & 0.355 \\
+\midrule
+UA & Baseline (4o-mini, post-pass) & 0.681 & 251/252 & 1 & 0.267 \\
+UA & Ensemble (4o-mini$\to$4.1-nano) & 0.592 & 250/252 & 2 & 0.405 \\
+UA & Agent (4.1-nano) & 0.660 & 247/252 & 5 & 0.350 \\
+\bottomrule
+\end{tabular}
+\caption{Gold EN/DE/UA reproduction results.}
+\end{table}
+
+\section{Notes / Known issues}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{API conservatism}: all new runs used low worker counts (3--10) to avoid stressing the API key.
+    \item \textbf{Error rows}: baseline/ensemble still produce a small number of \texttt{Error} rows (timeouts / parse failures). We report success rate and compute accuracy on successful rows only.
+    \item \textbf{Judge type alignment}: we report only \texttt{edit}-judge metrics (TP/FP1/FP2/FP3/TN/FN), matching the Gold label set.
+\end{itemize}
+
+\end{document}

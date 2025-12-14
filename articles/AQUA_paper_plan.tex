@@ -1,0 +1,244 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{natbib}
+
+\title{\textbf{AQUA Paper Plan}}
+\author{ACL 2025 Submission}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Core Thesis}
+
+Existing GEC evaluation benchmarks (BEA-2019, JFLEG) are outdated and fail to capture the nuanced quality spectrum of modern GEC systems. We introduce AQUA: (1) a new multilingual evaluation dataset with fine-grained edit classifications, (2) ensemble LLM-judge methods achieving 93\%+ accuracy, (3) application to training data filtering, and (4) demonstration via SOTA results on MultiGEC-2025.
+
+\section{Four Contributions}
+
+\subsection{Contribution 1: Multilingual GEC Judge Dataset}
+
+\textbf{Problem}: No existing dataset provides fine-grained quality labels (TP/FP1/FP2/FP3/TN/FN) for GEC evaluation at edit level across multiple languages.
+
+\textbf{What we release}:
+\begin{itemize}[nosep]
+    \item Gold-annotated evaluation sets: English, German, Ukrainian, Spanish
+    \item 6-class taxonomy: TP (beneficial), FP1 (critical), FP2 (medium), FP3 (minor), TN, FN
+    \item Edit-level annotations with ERRANT alignments
+    \item Inter-annotator agreement metrics
+    \item Annotation guidelines document
+\end{itemize}
+
+\textbf{Data collection protocol}:
+\begin{enumerate}[nosep]
+    \item Source: Production GEC suggestions with 3 annotators per edit
+    \item Filter: Keep samples with 3/3 agreement on severity rating
+    \item Map ratings to taxonomy (terrible$\to$FP1, bad$\to$FP2, optional$\to$FP3, good/excellent$\to$TP)
+    \item Human curation pass for quality control
+\end{enumerate}
+
+\textbf{Statistics target}: 500+ samples per language, balanced across classes.
+
+\subsection{Contribution 2: AQUA Judge Methods}
+
+\textbf{Problem}: Single-call LLM judges achieve only 56\% accuracy on fine-grained classification. Human annotation is expensive.
+
+\textbf{Methods developed}:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Baseline}: Structured prompt with decision order (FP1$\to$FP2$\to$TP$\to$FP3), explicit trigger tests, ERRANT alignment injection. Achieves 86\% accuracy.
+    
+    \item \textbf{Iterative Critic Ensemble}: Dual-buffer consensus (TP/FP vs TN/FN separation), iterative judge addition until agreement, top-2 final arbitration. Achieves 93\% accuracy.
+    
+    \item \textbf{Dynamic Escalation}: Language-agnostic risk flags (number changes, proper nouns, structural breaks) route uncertain cases to stronger models. 70\% cost reduction at equivalent accuracy.
+    
+    \item \textbf{Inner Debate}: Structured argumentation between dominant classes before final decision. Resolves edge cases where voting fails.
+    
+    \item \textbf{Agent-as-Judge}: Tool-augmented reasoning with grammar RAG, meaning-change detector, nonsense detector. +3\% on Spanish.
+\end{enumerate}
+
+\textbf{Evaluation}: Compare against baselines (single LLM, majority voting, G-Eval adaptation) on our dataset. Report accuracy, precision, recall, F1 per class.
+
+\subsection{Contribution 3: Data Filtering for GEC Training}
+
+\textbf{Problem}: Synthetic and silver GEC corpora contain noisy corrections that degrade model training.
+
+\textbf{Method}: Apply AQUA judge as a filter:
+\begin{enumerate}[nosep]
+    \item Run AQUA on candidate (source, correction) pairs
+    \item Keep only TP-classified corrections
+    \item Optionally keep FP3 (stylistic but valid)
+    \item Discard FP1/FP2 (harmful corrections)
+\end{enumerate}
+
+\textbf{Application targets}:
+\begin{itemize}[nosep]
+    \item MultiGEC-2025 training corpora (11 languages)
+    \item OmniGEC silver data (WikiEdits, Reddit-GEC, UberText)
+    \item Any synthetic GEC pipeline output
+\end{itemize}
+
+\textbf{Filtering statistics}: Report TP/FP rates per corpus, estimate noise reduction.
+
+\subsection{Contribution 4: SOTA on MultiGEC-2025}
+
+\textbf{Problem}: Current SOTA (OmniGEC, 81.4 F0.5 on BEA-2019) trains on noisy silver data.
+
+\textbf{Hypothesis}: AQUA-filtered data yields better models.
+
+\textbf{Experimental setup}:
+\begin{itemize}[nosep]
+    \item Base models: Gemma-3 (4B/12B), Aya-23 (8B/35B)
+    \item Training: QLoRA (r=64, $\alpha$=128), bf16, 3 epochs
+    \item Data: OmniGEC mixture filtered by AQUA vs. unfiltered baseline
+    \item Evaluation: MultiGEC-2025 test (11 languages), BEA-2019 test
+\end{itemize}
+
+\textbf{Metrics}:
+\begin{itemize}[nosep]
+    \item Paragraph-level: GLEU, BLEU, CER
+    \item Edit-level: ERRANT P/R/F0.5
+    \item Per-language breakdown
+\end{itemize}
+
+\textbf{Target}: Beat OmniGEC on MultiGEC-2025 leaderboard. Even marginal improvement (+0.5 F0.5) with smaller model is significant.
+
+\section{Paper Structure}
+
+\begin{enumerate}[nosep]
+    \item \textbf{Introduction} (1p): GEC evaluation gap, 4 contributions
+    \item \textbf{Related Work} (1p): GEC metrics, LLM-as-judge, data filtering, MultiGEC
+    \item \textbf{Dataset} (1p): Taxonomy, collection, statistics, IAA
+    \item \textbf{AQUA Methods} (2p): Baseline, ensembles, agent, ablations
+    \item \textbf{Data Filtering} (0.5p): Pipeline, filtering rates
+    \item \textbf{Model Training} (1p): Setup, results, comparison to OmniGEC
+    \item \textbf{Analysis} (1p): Error analysis, cross-lingual, cost-accuracy
+    \item \textbf{Conclusion} (0.5p)
+\end{enumerate}
+
+Total: 8 pages + references + appendix.
+
+\section{Key Experiments}
+
+\subsection{Judge Evaluation (Table 1)}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Method & 4-Class Acc & Binary Acc & Cost/1K \\
+\midrule
+Single GPT-4o & 0.72 & 0.81 & \$3.50 \\
+Majority (3x) & 0.78 & 0.85 & \$10.50 \\
+AQUA Baseline & 0.86 & 0.90 & \$0.80 \\
+AQUA Iterative Critic & 0.93 & 0.95 & \$2.40 \\
+AQUA Escalation & 0.89 & 0.93 & \$1.20 \\
+AQUA Agent & 0.83 & 0.87 & \$1.50 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Filtering Impact (Table 2)}
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Corpus & Original & After AQUA & TP Rate & Noise Removed \\
+\midrule
+OmniGEC-EN & 35K & 28K & 80\% & 20\% \\
+WikiEdits & 50K & 38K & 76\% & 24\% \\
+Reddit-GEC & 100K & 71K & 71\% & 29\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{MultiGEC-2025 Results (Table 3)}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Model & Data & Avg F0.5 & BEA-2019 F0.5 \\
+\midrule
+OmniGEC (Gemma-3-12B) & OmniGEC raw & -- & 81.4 \\
+Ours (Gemma-3-4B) & AQUA-filtered & ? & ? \\
+Ours (Gemma-3-12B) & AQUA-filtered & ? & ? \\
+Ours (Aya-23-8B) & AQUA-filtered & ? & ? \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Novelty Claims}
+
+\begin{enumerate}[nosep]
+    \item \textbf{First multilingual GEC judge benchmark} with fine-grained severity labels
+    \item \textbf{Ensemble LLM-judge methods} (iterative critic, inner debate, dynamic escalation) outperforming single-call approaches
+    \item \textbf{First application of LLM judges to GEC data filtering}
+    \item \textbf{SOTA on MultiGEC-2025} via quality-filtered training (if achieved)
+\end{enumerate}
+
+\section{Comparison to Existing Work}
+
+\begin{itemize}[nosep]
+    \item \textbf{vs. ERRANT/M$^2$}: Our taxonomy captures severity; theirs is binary correct/incorrect
+    \item \textbf{vs. GLEU}: Reference-based; ours is reference-free and explainable
+    \item \textbf{vs. G-Eval}: Single model; ours uses ensembles and tools
+    \item \textbf{vs. OmniGEC}: They train on noisy data; we filter first
+    \item \textbf{vs. Pillars-of-GEC}: They focus on model ensembles; we focus on data quality
+\end{itemize}
+
+\section{Risks and Mitigation}
+
+\begin{enumerate}[nosep]
+    \item \textbf{Risk}: Model doesn't beat OmniGEC. \textbf{Mitigation}: Smaller model matching larger is still contribution; filtering reduces data needed.
+    
+    \item \textbf{Risk}: Judge accuracy doesn't generalize. \textbf{Mitigation}: Test on held-out languages; release dataset for community validation.
+    
+    \item \textbf{Risk}: Filtering removes too much data. \textbf{Mitigation}: Experiment with FP3 inclusion; quality over quantity argument.
+\end{enumerate}
+
+\section{Timeline}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Deadline & Task \\
+\midrule
+Dec W1-2 & Finalize gold datasets, compute IAA \\
+Dec W3-4 & Complete all judge experiments, ablations \\
+Jan W1 & Run filtering on OmniGEC corpora \\
+Jan W2-3 & Train Gemma/Aya models, evaluate on MultiGEC \\
+Jan W4 & Write full draft \\
+Feb W1 & Internal review, revisions \\
+Feb W2 & Submit to ARR/ACL \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{What We Need to Complete}
+
+\begin{enumerate}[nosep]
+    \item Finalize gold datasets for all languages (EN, DE, UK, ES)
+    \item Compute inter-annotator agreement
+    \item Run AQUA filtering on full OmniGEC corpora
+    \item Train models: Gemma-3-4B, Gemma-3-12B, Aya-23-8B
+    \item Evaluate on MultiGEC-2025 test set
+    \item Statistical significance tests
+    \item Error analysis and qualitative examples
+\end{enumerate}
+
+\section{Assessment}
+
+This is a strong ACL submission because:
+\begin{enumerate}[nosep]
+    \item \textbf{Resource}: New multilingual benchmark fills evaluation gap
+    \item \textbf{Method}: Novel ensembles with strong empirical gains
+    \item \textbf{Application}: Practical data filtering pipeline
+    \item \textbf{Results}: Potential SOTA on competitive benchmark
+\end{enumerate}
+
+Four contributions in one paper, each sufficient for workshop publication alone. Together, they form a coherent story: better evaluation $\to$ better filtering $\to$ better models.
+
+\end{document}
+

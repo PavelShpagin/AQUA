@@ -1,0 +1,28 @@
+worker_id,external_id,judgments_count,missed_count,golds_count,forgiven_count,channel,country,region,city,last_ip,flagged_at,rejected_at,bonus,flag_reason,trust_overall,submission_rate
+46046616,423088,50,0,0,0,feca,UA,Dnipropetrovsk Oblast,Samar,37.229.33.196,,,0,,0.9463,130
+46417377,942877,50,0,0,0,feca,UA,Kyivska oblast,Vyshneve,88.154.19.88,,,0,,0.9625,125
+46507787,emily.peterson@grammarly.com,0,0,0,0,cf_internal,,,,,,,0,,1,0
+46838746,1537951,50,0,0,0,feca,UA,Kyiv City,Kyiv,94.153.2.255,,,0,,1.0,120
+47004173,philip.dwelle@grammarly.com,0,0,0,0,cf_internal,,,,,,,0,,1,0
+47165257,1870347,50,0,0,0,feca,UA,Kyiv City,Kyiv,176.111.177.246,,,0,,0.955,120
+47194377,1108873,4,0,0,0,feca,UA,Kyiv City,Kyiv,46.211.124.151,,,0,,0.8,120
+47222588,1895995,16,0,0,0,feca,UA,Kyiv City,Kyiv,37.115.192.204,,,0,,0.8483,120
+47276988,1926142,50,0,0,0,feca,UA,Cherkasy Oblast,Cherkasy,46.150.88.27,,,0,,0.97,120
+47301307,davi.reis@grammarly.com,0,0,0,0,cf_internal,,,,,,,0,,1,0
+47340400,1953849,34,0,0,0,feca,UA,Kharkivska Oblast,Kharkiv,178.165.43.231,,,0,,0.9363,128
+47357409,1962293,40,0,0,0,feca,UA,Kyiv City,Kyiv,176.111.176.200,,,0,,0.9469,120
+47370065,1969605,4,0,0,0,feca,UA,Dnipropetrovsk Oblast,Dnipro,89.209.12.52,,,0,,0.8672,120
+47385111,1982678,22,0,0,0,feca,UA,Kyiv City,Kyiv,178.133.17.70,,,0,,0.9261,120
+47387903,1605496,0,0,0,0,feca,,,,,,,0,,1,0
+47396780,1992984,0,0,0,0,feca,,,,,,,0,,1,0
+47403941,1999329,42,0,0,0,feca,UA,Zakarpattia,Mynai,194.44.30.146,,,0,,0.9308,126
+47427740,2019691,0,0,0,0,feca,,,,,,,0,,1,0
+47433488,2024389,15,0,0,0,feca,UA,Dnipropetrovsk Oblast,Kryvyi Rih,178.213.2.120,,,0,,0.8633,129
+47916694,2428171,0,0,0,0,feca,,,,,,,0,,1,0
+47974209,2474919,50,0,0,0,feca,UA,Dnipropetrovsk,Dnipro,46.98.103.248,,,0,,0.92,21
+47974328,2475031,0,0,0,0,feca,,,,,,,0,,1,0
+48193365,2674609,50,0,0,0,feca,UA,Kirovohrad,Kropyvnytskyi,91.201.240.72,,,0,,0.9527,131
+48212597,2690695,50,0,0,0,feca,UA,Mykolaivska oblast,Bereznehuvate,88.155.80.182,,,0,,0.9225,26
+48220032,2697668,50,0,0,0,feca,UA,Khmelnytskyi Oblast,Khmelnytskyi,188.163.27.32,,,0,,0.9194,167
+48220567,2698186,50,0,0,0,feca,UA,Odesa,Ilichanka,46.250.13.108,,,0,,0.953,125
+48230588,2707924,50,0,0,0,feca,UA,Zhytomyrska oblast,Zhytomyr,31.144.37.207,,,0,,0.9613,25

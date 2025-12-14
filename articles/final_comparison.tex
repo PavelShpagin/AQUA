@@ -1,0 +1,70 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{xcolor}
+
+\title{\textbf{AQUA: Final Method Comparison \& Conclusion}}
+\author{Experimental Report}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Performance \& Cost Comparison}
+
+Results are reported for the Spanish Gold dataset (SpanishFPs, 98 examples, high-agreement) where the SOTA methods were tuned.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Method} & \textbf{Judge Type} & \textbf{Backend(s)} & \textbf{Accuracy} & \textbf{Binary Acc} & \textbf{Cost/1k} \\
+\midrule
+\textbf{Baseline} & Feedback & gpt-4o-mini & 76.7\% & 88.8\% & \textbf{\$0.17} \\
+\textbf{Dynamic Escalation} & Feedback & 4o-mini $\to$ 4.1-nano & 75.5\% & 87.8\% & \$0.23 \\
+\textbf{Inner Debate} & Feedback & 3x Mixed & 65.3\% & 86.7\% & \$0.44 \\
+\textbf{Agent (SOTA)} & Edit (ReAct) & \textbf{gpt-4.1-nano} & \textbf{82.7\%} & \textbf{90.8\%}* & \$0.32 \\
+\bottomrule
+\end{tabular}
+\caption{Spanish Evaluation Results (*Simplified Binary Accuracy)}
+\end{table}
+
+\subsection{Spanish Ablation: Rule-RAG On vs Off}
+The Edit Agent supports a local ``rulebook'' retrieval module (Rule-RAG). We ablated it on SpanishFPs:
+\begin{itemize}
+    \item \textbf{Rulebook ON}: 79.4\% accuracy (successful evals: 97/98), cost $\approx\$0.35$/1k
+    \item \textbf{Rulebook OFF}: 82.7\% accuracy (successful evals: 98/98), cost $\approx\$0.32$/1k
+\end{itemize}
+\textbf{Takeaway}: the current Rule-RAG implementation is slightly noisy on this dataset; disabling it is both cheaper and more accurate. For publication, either (a) ship Agent without Rule-RAG, or (b) improve retrieval quality and re-run the ablation.
+
+\section{Analysis of Other Languages}
+
+\subsection{English Performance}
+The Agent was tested on the English Gold dataset (\texttt{gold\_en.csv}, 221 examples in-repo) using \texttt{gpt-4o-mini}:
+\begin{itemize}
+    \item \textbf{Accuracy}: 51.9\% (Significantly lower than Spanish).
+    \item \textbf{Reason}: The English RAG rules are generic (e.g., basic Subject-Verb agreement) and lack the specific nuance required for the advanced errors in the Gold dataset. Additionally, \texttt{gpt-4o-mini} is weaker than the \texttt{gpt-4.1-nano} used for Spanish.
+\end{itemize}
+
+\subsection{Ukrainian Readiness}
+\begin{itemize}
+    \item \textbf{Status}: Untested but RAG-ready.
+    \item \textbf{Weakness}: \texttt{data/rag/ukrainian/comprehensive\_rules.json} currently contains only \textbf{3 rules}. This is insufficient for high-accuracy agentic reasoning.
+    \item \textbf{Conclusion}: We expect the Agent to perform poorly on Ukrainian without significantly expanding the rulebook.
+\end{itemize}
+
+\section{How the Agent Works}
+
+The Agent-as-a-Judge (\texttt{judges/edit/agent.py}) uses a ReAct workflow:
+\begin{enumerate}
+    \item \textbf{Analyze}: Aligns source and edit.
+    \item \textbf{Retrieve (Rule-RAG)}: Optionally retrieves short rule snippets (local/offline) relevant to the edit and injects them as ``rulebook cues'' into the prompt.
+    \item \textbf{Reason}: Synthesizes evidence.
+    \item \textbf{Decide}: Outputs classification.
+\end{enumerate}
+
+\textbf{Conclusion}: The Agent is currently \textbf{SOTA-ready for Spanish only}. For English and Ukrainian, the Rule-RAG component needs significant expansion to match the Spanish performance.
+
+\end{document}

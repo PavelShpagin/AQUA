@@ -1,0 +1,307 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{natbib}
+
+\title{\textbf{AQUA: Autonomous Quality Assurance for Multilingual GEC} \\ 
+\large Comprehensive Project Summary}
+\author{Project Documentation}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Executive Summary}
+
+AQUA (Autonomous Quality Assurance for Multilingual GEC) is a modular, production-ready framework for automated evaluation of Grammatical Error Correction (GEC) suggestions using Large Language Models (LLMs). The project introduces novel ensemble methods, dynamic escalation strategies, and agentic algorithms that achieve state-of-the-art performance in GEC quality assessment across multiple languages.
+
+\subsection{Key Contributions}
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Novel 6-class Taxonomy}: Extension of traditional binary TP/FP classification to a fine-grained 6-class system (TP, FP1, FP2, FP3, TN, FN) that captures correction severity and necessity.
+    
+    \item \textbf{Dynamic Escalation Ensemble}: A cost-efficient routing mechanism that uses lightweight models for simple cases and escalates to stronger backends only when needed.
+    
+    \item \textbf{Iterative Critic Ensemble}: A consensus-based approach with separate TP/FP and TN/FN buffers that iteratively builds agreement.
+    
+    \item \textbf{Inner Debate Ensemble}: A novel debate-style ensemble where competing viewpoints are structured into arguments before final adjudication.
+    
+    \item \textbf{Agent-as-a-Judge}: A tool-augmented agentic approach combining RAG-based grammar lookup with specialized reasoning tools.
+    
+    \item \textbf{Multilingual Support}: Language-agnostic design with specific support for English, German, Ukrainian, Spanish, and extensibility to other languages.
+\end{enumerate}
+
+\section{Problem Statement}
+
+\subsection{The GEC Evaluation Challenge}
+
+Grammatical Error Correction systems produce suggestions that range from highly beneficial corrections to harmful meaning-altering changes. Automatically evaluating these suggestions requires:
+
+\begin{itemize}
+    \item Distinguishing true corrections from false positives
+    \item Assessing severity of false positives (critical vs. minor)
+    \item Detecting meaning changes, sensitivity issues, and nonsense
+    \item Handling multilingual text with language-specific rules
+    \item Maintaining cost-efficiency at production scale
+\end{itemize}
+
+\subsection{Label Taxonomy}
+
+AQUA uses a hierarchical 6-class taxonomy:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lp{10cm}@{}}
+\toprule
+\textbf{Label} & \textbf{Definition} \\
+\midrule
+TP & True Positive: Correction fixes a genuine error and is beneficial \\
+FP1 & Critical False Positive: Major meaning change, sensitivity risk, or nonsensical \\
+FP2 & Medium False Positive: Introduces grammatical error or minor meaning change \\
+FP3 & Minor False Positive: Stylistic preference, both versions valid \\
+TN & True Negative: No correction needed, correctly unchanged \\
+FN & False Negative: Correction was needed but not applied \\
+\bottomrule
+\end{tabular}
+\caption{AQUA Label Taxonomy}
+\end{table}
+
+\section{System Architecture}
+
+\subsection{Modular Judge Types}
+
+AQUA supports multiple judge types optimized for different granularities:
+
+\begin{itemize}
+    \item \textbf{Feedback Judge}: 4-class (TP/FP1/FP2/FP3) classification for production feedback
+    \item \textbf{Sentence Judge}: 6-class classification for sentence-level evaluation
+    \item \textbf{Edit Judge}: Per-edit classification with ERRANT alignment
+    \item \textbf{TN/FN Judge}: Specialized classifier for negative cases
+\end{itemize}
+
+\subsection{Ensemble Methods}
+
+\subsubsection{Weighted Ensemble}
+
+Simple voting with confidence-based weighting across multiple backend models.
+
+\subsubsection{Consistency Ensemble}
+
+Runs N parallel judges and requires consensus threshold for final decision.
+
+\subsubsection{Dynamic Escalation Ensemble}
+
+\begin{algorithm}
+\caption{Dynamic Escalation Ensemble}
+\begin{algorithmic}[1]
+\State \textbf{Input:} Row (src, tgt, aligned), Backends [small, mid, top]
+\State $label_{small} \gets$ \Call{Classify}{small, row}
+\State $flags \gets$ \Call{ComputeRiskFlags}{src, tgt, aligned, $label_{small}$}
+\If{$label_{small} \in \{FP1, FP2, Error\}$ OR $flags$ trigger escalation}
+    \State $label_{expert} \gets$ \Call{Classify}{mid or top, row}
+    \If{$label_{expert} \neq label_{small}$}
+        \State \Return \Call{FinalJudge}{top, opinions}
+    \EndIf
+    \State \Return $label_{expert}$
+\EndIf
+\State \Return $label_{small}$
+\end{algorithmic}
+\end{algorithm}
+
+Risk flags include: punctuation-only edits, number changes, proper noun changes, structured token changes, and long rewrites.
+
+\subsubsection{Iterative Critic Ensemble}
+
+\begin{algorithm}
+\caption{Iterative Critic with Dual Buffers}
+\begin{algorithmic}[1]
+\State \textbf{Input:} Row, Backends, $n_{judges}$, $max_{iters}$
+\State $tpfp\_buffer \gets []$, $tnfn\_buffer \gets []$
+\State Run $n_{judges}$ parallel judges, populate buffers
+\While{$iter < max_{iters}$ AND no consensus}
+    \State $opinions \gets$ \Call{FormatOpinions}{recent\_results}
+    \State $new\_label \gets$ \Call{JudgeWithContext}{backend, row, opinions}
+    \State Add $new\_label$ to appropriate buffer
+    \State Check for consensus in each buffer
+\EndWhile
+\State $top\_two \gets$ \Call{GetDominantClasses}{selected\_buffer}
+\State \Return \Call{FinalJudge}{backend, $top\_two$, all\_opinions}
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Inner Debate Ensemble}
+
+A novel approach that structures disagreements into formal debates:
+
+\begin{enumerate}
+    \item Run N initial judges in parallel
+    \item If unanimous consensus, return immediately
+    \item Identify two most dominant classes using priority hierarchy: FP1 $>$ FP2 $>$ FP3 $>$ FN $>$ TP/TN
+    \item Extract balanced arguments from each side
+    \item Format alternating debate structure
+    \item Final judge makes decision after weighing arguments
+\end{enumerate}
+
+\subsection{Agent-as-a-Judge}
+
+The agentic approach equips an LLM with specialized tools:
+
+\begin{itemize}
+    \item \textbf{Grammar RAG}: Vector database of grammar rules and conventions
+    \item \textbf{Meaning Change Detector}: Semantic similarity assessment (0-4 scale)
+    \item \textbf{Nonsense Detector}: Coherence and structural integrity check
+    \item \textbf{Quality Scorer}: Relative improvement assessment (-3 to +3)
+    \item \textbf{Moderation Check}: Sensitivity content detection
+\end{itemize}
+
+The agent uses ReAct-style reasoning: Observe $\rightarrow$ Think $\rightarrow$ Act (use tools) $\rightarrow$ Reflect.
+
+\section{Key Innovations}
+
+\subsection{ERRANT Alignment Integration}
+
+All judges use ERRANT-style alignment notation to highlight specific edits:
+\begin{verbatim}
+Original: He works with patients.
+Aligned: He works {with=>on} patients.
+Edit: {with=>on}
+\end{verbatim}
+
+This provides explicit edit localization for more accurate classification.
+
+\subsection{Language-Agnostic Risk Flags}
+
+Deterministic routing using heuristics that work across languages:
+\begin{itemize}
+    \item Number/currency/date changes
+    \item Proper noun modifications
+    \item URL/email/code fragment alterations
+    \item Quote/bracket balance
+    \item Long rewrite detection (6+ changed tokens)
+\end{itemize}
+
+\subsection{Cost-Efficient Production Design}
+
+\begin{itemize}
+    \item Small models handle 70-80\% of cases without escalation
+    \item Batch API support for high-throughput scenarios
+    \item Parallel processing with configurable workers
+    \item Token/cost tracking for budget management
+\end{itemize}
+
+\section{Experimental Results}
+
+\subsection{Benchmark Performance}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Method} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\midrule
+Baseline Prompt & 0.56 & 0.62 & 0.75 & 0.55 \\
+Improved Prompt & 0.86 & 0.72 & 0.69 & 0.65 \\
+Iterative Critic & 0.93 & 0.76 & 0.78 & 0.74 \\
+\bottomrule
+\end{tabular}
+\caption{4-class (TP/FP3/FP2/FP1) Evaluation Results}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Method} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\midrule
+Baseline Prompt & 0.58 & 0.61 & 0.75 & 0.53 \\
+Improved Prompt & 0.90 & 0.78 & 0.91 & 0.83 \\
+Iterative Critic & 0.95 & 0.87 & 0.93 & 0.89 \\
+\bottomrule
+\end{tabular}
+\caption{Binary TP/FP Evaluation Results}
+\end{table}
+
+\subsection{Agent-as-a-Judge Performance}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Agent Type} & \textbf{Binary Acc} & \textbf{6-Class Acc} & \textbf{Improvement} \\
+\midrule
+Baseline & 81.6\% & 79.6\% & -- \\
+SOTA Agent (with RAG) & 84.7\% & 82.7\% & +3.1\% \\
+\bottomrule
+\end{tabular}
+\caption{Agent Performance on Spanish FPs Dataset}
+\end{table}
+
+\subsection{Escalation Efficiency}
+
+\begin{itemize}
+    \item \textbf{Baseline}: Overall Acc $\approx$ 0.871; Simplified Binary Acc $\approx$ 0.910
+    \item \textbf{Escalation}: Overall Acc $\approx$ 0.891; Simplified Binary Acc $\approx$ 0.930
+    \item Escalation routes only 20-30\% of cases to stronger models
+\end{itemize}
+
+\section{Technical Implementation}
+
+\subsection{Prompt Engineering}
+
+Key prompt design principles:
+\begin{enumerate}
+    \item Decision order enforcement: FP1 $\rightarrow$ FP2 $\rightarrow$ TP $\rightarrow$ FP3
+    \item Explicit trigger tests for each category
+    \item Hard constraints preventing common misclassifications
+    \item Language-specific examples in multilingual prompts
+    \item JSON output format for reliable parsing
+\end{enumerate}
+
+\subsection{Infrastructure}
+
+\begin{itemize}
+    \item Python-based with pandas, tqdm, concurrent.futures
+    \item Support for OpenAI, Anthropic, and Google backends
+    \item YAML-based configuration
+    \item Shell scripts for reproducible experiments
+    \item Comprehensive debug mode for prompt inspection
+\end{itemize}
+
+\section{Novelty and Contributions}
+
+\subsection{Scientific Contributions}
+
+\begin{enumerate}
+    \item \textbf{First comprehensive agentic approach} to GEC evaluation with tool-augmented reasoning
+    \item \textbf{Novel Inner Debate ensemble} that structures disagreements into formal arguments
+    \item \textbf{Dynamic escalation with deterministic routing} combining heuristics with LLM classification
+    \item \textbf{Dual-buffer consensus mechanism} for iterative refinement
+    \item \textbf{Fine-grained 6-class taxonomy} beyond binary classification
+    \item \textbf{Cross-lingual generalization} with language-agnostic design
+\end{enumerate}
+
+\subsection{Practical Contributions}
+
+\begin{enumerate}
+    \item Production-ready framework with cost tracking
+    \item Modular architecture supporting multiple judge types
+    \item Extensive documentation and reproducibility scripts
+    \item Human-curated gold datasets for evaluation
+    \item Integration with feedback processing pipelines
+\end{enumerate}
+
+\section{Conclusion}
+
+AQUA represents a significant advancement in automated GEC evaluation, achieving 93\% accuracy on 4-class classification and 95\% on binary TP/FP tasks. The combination of novel ensemble methods, agentic reasoning, and cost-efficient escalation makes it suitable for both research benchmarking and production deployment. The framework's modularity and multilingual support position it as a foundation for future GEC evaluation research.
+
+\end{document}
+

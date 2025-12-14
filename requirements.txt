@@ -1,0 +1,68 @@
+# # GEC Judge - Multilingual Dataset Processing
+# # Core processing dependencies
+# # Note: Use install_deps.sh script to handle errant/spacy compatibility
+spacy==3.7.2
+# # errant==0.2.3 installed separately via install_deps.sh
+# pandas
+# numpy
+# datasets
+# gec-datasets  # Requires Python >=3.11; optional; comment out for py3.9 env
+
+# # Additional utilities
+# tqdm
+# regex
+# # python-Levenshtein  # ERRANT-only alignment now; keep commented unless needed
+# requests
+# sacremoses
+# nltk
+# scikit-learn
+# matplotlib
+# seaborn
+# statsmodels
+# stanza
+# spacy-stanza
+# PyYAML
+
+# # Judge and API dependencies
+# # sparta_lib           # Legacy; comment out unless explicitly used
+# # ray                  # Comment out if not using Ray runners
+# python-dotenv
+# openai
+# # grampy_api           # Legacy; comment out unless used
+# # grampy               # Legacy; comment out unless used
+# langid for language detection (faster and more accurate than langid)
+
+# # LLM backends
+# transformers>=4.42
+# accelerate>=0.33
+# # Use CPU wheel by default; users can override with CUDA extra-index if needed
+# torch>=2.1
+
+# # RAG dependencies
+chromadb==0.4.24
+sentence-transformers==2.2.2
+# # sentence-transformers # Comment out if RAG is not used
+
+# # Testing and benchmarking dependencies
+# pytest
+# pytest-xdist
+
+# # Data analysis and visualization
+# jupyter
+# ipython
+# notebook
+# plotly
+
+# # Optional dependencies for specific features
+# # hdbscan  # For advanced clustering in feedback_bot; comment out if not needed
+
+pandas
+numpy
+scikit-learn
+tqdm
+python-dotenv
+PyYAML
+langid
+requests
+jinja2
+language-tool-python
